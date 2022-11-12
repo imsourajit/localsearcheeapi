@@ -68,8 +68,12 @@ con.connect(function(err){
             });
             unirestReq.end(function (r) {
                 if (r.error) throw new Error(r.error);
-                res.json({
-                    success: true
+
+                let searchRefQuery = `INSERT INTO otpVerification (phoneNumber, otp, isUsed) VALUES (${phoneNumber}, ${otp}, false) `
+                con.query(searchRefQuery, (err, result) => {
+                    res.json({
+                        success: true
+                    })
                 })
 
             });
@@ -80,31 +84,60 @@ con.connect(function(err){
         }
     })
 
+
+
+
+
+//    validate otp
+
+    app.post("/validateOtp", (req, res) => {
+        const { phoneNumber, otp } = req.body;
+        if(phoneNumber && otp) {
+            let validationQuery = `SELECT * FROM otpVerification WHERE phoneNumber=${phoneNumber} AND otp=${otp} AND isUsed=false`
+            con.query(validationQuery, (err, result) => {
+                if(result.length) {
+                    const { id, phoneNumber, otp, isUsed } = result[0]
+                    let updateQue = `UPDATE otpVerification SET isUsed=true WHERE id=${id}`
+                    con.query(updateQue, (error, result) => {
+                        res.json({
+                            data: 'VALID_OTP'
+                        })
+                    })
+                } else {
+                    res.json({
+                        data: 'INVALID_OTP'
+                    })
+                }
+            })
+        } else {
+            res.json({
+                data: 'INVALID_OTP'
+            })
+
+        }
+    })
+
+
+
+
+//    login api
+
+
+    app.get("/login", (req, res)=>{
+
+        const { email, password} = req.query;
+
+        let loginQuery = `SELECT * FROM users WHERE email='${email}' AND password='${password}'`;
+
+        con.query(loginQuery, (err, result) => {
+            res.json({
+                data: result
+            })
+        })
+    })
+
+
 })
-
-
-
-
-
-
-
-
-// app.get("/", (req, res) => {
-//     console.log(req)
-//     con.connect(function(err) {
-//         if (err) {
-//             console.log("@err", err)
-//             throw err;
-//         }
-//         // console.log("Connected!");
-//         // var sql = "CREATE TABLE customers (name VARCHAR(255), address VARCHAR(255))";
-//         // con.query(sql, function (err, result) {
-//         //     if (err) throw err;
-//         //     console.log("Table created");
-//         // });
-//     });
-//     res.json({ message: "ok" });
-// });
 
 
 
