@@ -11,7 +11,12 @@ const {generateOtp} = require("./helpers");
 let con = mysql.createConnection(config.db);
 
 const app = express();
-const port = 3000;
+const port = 3003;
+
+const cors = require('cors');
+app.use(cors({
+    origin: '*'
+}));
 app.use(express.json());
 app.use(
     express.urlencoded({
@@ -22,6 +27,7 @@ app.use(
 
 
 
+const handledbConnection = () => {
 
 
 
@@ -117,6 +123,28 @@ con.connect(function(err){
         }
     })
 
+    app.post("/signup", (req, res) => {
+
+        const {email, password, BusinessName, BusinessAddress, FullName, PhoneNumber, IsPhoneVerified, Place, Pincode, ServiceType, CategoryName, FacebookUrl, TwitterUrl, InstagramUrl, WhatsAppUrl, Website, ReferralCode, IsEmailVerified, UserType, gstin, creationTime} = req.body
+
+        let insertQuery = `INSERT INTO users (userId, email, password, BusinessName, BusinessAddress, FullName, PhoneNumber, IsPhoneVerified, Place, Pincode, ServiceType, CategoryName, FacebookUrl, TwitterUrl, InstagramUrl, WhatsAppUrl, Website, ReferralCode, IsEmailVerified, UserType, gstin, creationTime) VALUES (NULL, "${email}", "localsearchee", "${BusinessName}", "${BusinessAddress}", "${FullName}", "${PhoneNumber}", ${IsPhoneVerified}, "${Place}", "${Pincode}", "${ServiceType}", "${CategoryName}", "${FacebookUrl}", "${TwitterUrl}", "${InstagramUrl}", "${WhatsAppUrl}", "${Website}", "${ReferralCode}", ${IsEmailVerified}, "${UserType}", "${gstin}", "${creationTime}")`
+
+        con.query(insertQuery, (err, result) => {
+
+            console.log("err", err, result)
+                
+                let resultQuery = `SELECT * FROM users WHERE email='${email}'`
+                con.query(resultQuery, (err, result) => {
+            res.json({
+                data: result
+            })
+        })
+
+            })
+
+
+    })
+
 
 
 
@@ -137,8 +165,56 @@ con.connect(function(err){
     })
 
 
+app.get("/getAllUsers", (req, res)=>{
+        let loginQuery = `SELECT 
+    t1.*,
+    t2.*
+FROM users AS t1
+    INNER JOIN
+        (
+        SELECT count(refferedBy) as refers
+        FROM referral WHERE referral.refferedBy = userId
+        ) AS t2`;
+        con.query(loginQuery, (err, result) => {
+            res.json({
+                data: result
+            })
+        })
+    })
 })
 
+
+
+    app.get("/search", (req, res)=>{
+
+        const { bname, serviceType, place, pincode, query } = req.query;
+
+        // let searchque = `SELECT * FROM users WHERE BusinessName LIKE '%${bname}%' OR ServiceType LIKE '%${serviceType}%' OR Place LIKE '%${place}%' OR Pincode LIKE '%${pincode}%' `;
+
+        let searchque = `SELECT * FROM users ${query} `;
+
+
+        con.query(searchque, (err, result) => {
+            res.json({
+                data: result
+            })
+        })
+    })
+
+
+con.on('error', function(err) {
+    console.log('db error', err);
+    con = mysql.createConnection(config.db)
+handledbConnection()
+
+  });
+
+
+}
+
+
+
+handledbConnection()
 
 
 
